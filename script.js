@@ -25,7 +25,7 @@ import SimplexNoise from 'https://cdn.skypack.dev/simplex-noise';
 
 
 const scene = new Scene()
-scene.background = new Color("#7D8CC4")
+scene.background = new Color("#AFB2FF")
 
 const camera = new PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 1000)
 camera.position.set(-17, 31, 33)
@@ -105,7 +105,7 @@ const dirt2_height = max_height * 0;
         new CylinderGeometry(17,17, max_height * 0.2, 50),
         new MeshPhysicalMaterial({
             envMap: envmap,
-            color: new Color('#55aaff').convertSRGBToLinear().multiplyScalar(3),
+            color: new Color('#62A2F7').convertSRGBToLinear().multiplyScalar(3),
             ior: 1.4,
             transmission: 1,
             transparent: true,
@@ -126,8 +126,8 @@ const dirt2_height = max_height * 0;
         new CylinderGeometry(17.1, 17.1, max_height * 0.25, 50, 1, true),
         new MeshPhysicalMaterial({
             envMap: envmap,
-            map: textures.dirt,
-            envMapIntensity: 0.2,
+            // map: textures.water,
+            envMapIntensity: 0.01,
             side: DoubleSide
         })
     )
@@ -246,7 +246,7 @@ function three(height, position) {
 
 function clouds() {
     let geo = new SphereGeometry(0, 0, 0); 
-    let count = Math.floor(Math.pow(Math.random(), 0.45) * 5);
+    let count = Math.floor(Math.pow(Math.random(), 0.45) * 4);
   
     for(let i = 0; i < count; i++) {
       const puff1 = new SphereGeometry(1.2, 7, 7);

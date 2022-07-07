@@ -21,14 +21,21 @@ import { RGBELoader } from 'https://cdn.skypack.dev/three-stdlib@2.8.5/loaders/R
 import { OrbitControls } from 'https://cdn.skypack.dev/three-stdlib@2.8.5/controls/OrbitControls';
 import { mergeBufferGeometries } from 'https://cdn.skypack.dev/three-stdlib@2.8.5/utils/BufferGeometryUtils';
 import SimplexNoise from 'https://cdn.skypack.dev/simplex-noise';
+import {GLTFLoader} from 'https://cdn.skypack.dev/three-stdlib@2.8.5/loaders/GLTFLoader'
+
+import { gsap } from 'https://cdn.skypack.dev/gsap';
+import { ScrollTrigger } from 'https://cdn.skypack.dev/gsap/ScrollTrigger';
+gsap.registerPlugin(ScrollTrigger);
+
+// console.log(gsap)
 
 
 
 const scene = new Scene()
-scene.background = new Color("#AFB2FF")
+scene.background = new Color("#000")
 
 const camera = new PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 1000)
-camera.position.set(-17, 31, 33)
+camera.position.set(-5, 37, 35)
 // camera.position.set(0, 0, 50)
 
 const renderer = new WebGLRenderer({ antialias: true });
@@ -71,12 +78,12 @@ const dirt2_height = max_height * 0;
     envmap = pmrem.fromEquirectangular(envmapTexture).texture
 
     let textures = {
-        dirt: await new TextureLoader().load("dirt.png"),
-        dirt2: await new TextureLoader().load("dirt2.jpg"),
-        grass: await new TextureLoader().load("grass.jpg"),
-        sand: await new TextureLoader().load("sand.jpg"),
+        dirt: await new TextureLoader().load("clr.jpg"),
+        dirt2: await new TextureLoader().load("pink.jpg"),
+        grass: await new TextureLoader().load("mosaic.jpg"),
+        sand: await new TextureLoader().load("green.jpg"),
         water: await new TextureLoader().load("water.jpg"),
-        stone: await new TextureLoader().load("stone.png"),
+        stone: await new TextureLoader().load("ttjpg.jpg"),
     }
 
     const simplex = new SimplexNoise()
@@ -105,7 +112,7 @@ const dirt2_height = max_height * 0;
         new CylinderGeometry(17,17, max_height * 0.2, 50),
         new MeshPhysicalMaterial({
             envMap: envmap,
-            color: new Color('#62A2F7').convertSRGBToLinear().multiplyScalar(3),
+            color: new Color('#39f0fa').convertSRGBToLinear().multiplyScalar(3),
             ior: 1.4,
             transmission: 1,
             transparent: true,
@@ -148,7 +155,7 @@ const dirt2_height = max_height * 0;
     mapFloor.position.set(0, -max_height * 0.05, 0)
     scene.add(mapFloor)
 
-    clouds()
+    // clouds()
 
 
     renderer.setAnimationLoop(()=> {
@@ -274,6 +281,7 @@ function clouds() {
         envMap: envmap, 
         envMapIntensity: 0.75, 
         flatShading: true,
+        color: 0x000000
         // transparent: true,
         // opacity: 0.85,
       })
@@ -282,6 +290,128 @@ function clouds() {
     scene.add(mesh);
 }
 
+let modelOne = ''
+let modelTwo = ''
+let modelThree = ''
+let textureHead = new TextureLoader().load("mosaic.jpg")
+const gltfLoader = new GLTFLoader()
+gltfLoader.load('myhead4.gltf', (gltf)=> {
+    
+    modelOne = gltf.scene
+    modelOne.scale.set(2, 2, 2)
+    modelOne.position.y = 15
+    modelOne.position.z = -10
+    modelOne.rotation.x = .3
+    modelOne.traverse(o=> {
+        if(o.isMesh) {
+            o.geometry.center()
+            o.material = new MeshStandardMaterial({
+                color: 0xffffff,
+                envMap: envmap, 
+                envMapIntensity: 0.75, 
+                flatShading: true,
+                map: textureHead,
+            });
+        }
+        
+    })
+    scene.add(modelOne)
+})
+gltfLoader.load('myhead4.gltf', (gltf)=> {
+    
+    modelTwo = gltf.scene
+    modelTwo.scale.set(2, 2, 2)
+    modelTwo.position.y = 13
+    modelTwo.position.x = -13
+    modelTwo.rotation.y = 1.2
+    modelTwo.rotation.z = .3
+    modelTwo.traverse(o=> {
+        if(o.isMesh) {
+            o.geometry.center()
+            o.material = new MeshStandardMaterial({
+                // color: 0xffffff,
+                envMap: envmap,
+                // roughness: 1,
+                // metalness: .5,
+                envMapIntensity: 0.75, 
+                flatShading: true,
+                map: textureHead,
+            });
+        }
+        
+    })
+    scene.add(modelTwo)
+    
+})
+gltfLoader.load('myhead4.gltf', (gltf)=> {
+    
+    modelThree = gltf.scene
+    modelThree.scale.set(2, 2, 2)
+    modelThree.position.y = 10
+    modelThree.position.x = 10
+    modelThree.rotation.y = -1.2
+    modelThree.rotation.z = .3
+    modelThree.traverse(o=> {
+        if(o.isMesh) {
+            o.geometry.center()
+            o.material = new MeshStandardMaterial({
+                color: 0xffffff,
+                envMap: envmap, 
+                envMapIntensity: 0.75, 
+                flatShading: true,
+                map: textureHead,
+            });
+        }
+        
+    })
+    scene.add(modelThree)
+})
+
+let tl = ''
+
+tl = gsap.timeline({
+    scrollTrigger: { 
+      // trigger: '.wrap',
+      // trigger: 'wrap',
+      // trigger: '#wrap',
+      // trigger: '.container',
+      // markers: true,
+      scrub: 0.5,
+      start: 'top top',
+      end: 'bottom bottom',
+      snap: 1/(3-1),
+      onUpdate: (self)=>{
+        // modelThree.position.z = 2.*3.14*self.progress;
+        modelThree.position.y = 10 + self.progress*4;
+        modelThree.rotation.y = 2.*3.14*self.progress;
+      }
+    }
+});
+tl = gsap.timeline({
+    scrollTrigger: { 
+      // trigger: '.wrap',
+      // trigger: 'wrap',
+      // trigger: '#wrap',
+      // trigger: '.container',
+      // markers: true,
+      scrub: 0.5,
+      start: 'top top',
+      end: 'bottom bottom',
+      snap: 1/(4-1),
+      onUpdate: (self)=>{
+        // modelTwo.rotation.z = 2.*3.14*self.progress;
+        // modelTwo.position.z = -2.6*Math.sin(3.14*self.progress);
+        modelTwo.position.y = 10 + self.progress*4;
+        modelTwo.rotation.y = 2.*3.14*self.progress;
+        camera.position.z = 35 + (-20* self.progress);
+        camera.position.y = 37 + (-25* self.progress);
+        camera.position.x = -5 + (-25* self.progress);
+      }
+    }
+});
+
+
+// ========= RESIZE ============
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight

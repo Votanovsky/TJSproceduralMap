@@ -8,11 +8,13 @@ import {
     CylinderGeometry,
     BoxGeometry,
     Vector2,
+    Vector4,
     TextureLoader,
     MeshPhysicalMaterial,
     PCFSoftShadowMap,
     PointLight,
     DoubleSide,
+    ShaderMaterial
     // setDataType
     
 } from 'https://cdn.skypack.dev/three@0.137';
@@ -20,16 +22,18 @@ import {
 import { RGBELoader } from 'https://cdn.skypack.dev/three-stdlib@2.8.5/loaders/RGBELoader';
 import { OrbitControls } from 'https://cdn.skypack.dev/three-stdlib@2.8.5/controls/OrbitControls';
 import { mergeBufferGeometries } from 'https://cdn.skypack.dev/three-stdlib@2.8.5/utils/BufferGeometryUtils';
-import SimplexNoise from 'https://cdn.skypack.dev/simplex-noise';
+
+import { createNoise2D } from './node_modules/simplex-noise/dist/esm/simplex-noise.js';
+
 import {GLTFLoader} from 'https://cdn.skypack.dev/three-stdlib@2.8.5/loaders/GLTFLoader'
 
 import { gsap } from 'https://cdn.skypack.dev/gsap';
 import { ScrollTrigger } from 'https://cdn.skypack.dev/gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
-// console.log(gsap)
+const grad = new TextureLoader().load('gradient.jpg')
 
-
+// gsap.registerPlugin(CSSRulePlugin);
 
 const scene = new Scene()
 scene.background = new Color("#000")
@@ -71,6 +75,9 @@ const grass_height = max_height * 0.5;
 const sand_height = max_height * 0.3;
 const dirt2_height = max_height * 0;
 
+// let u_time = ''
+let utime 
+let u_time 
 
 (async function() {
     let pmrem = new PMREMGenerator(renderer)
@@ -86,7 +93,7 @@ const dirt2_height = max_height * 0;
         stone: await new TextureLoader().load("ttjpg.jpg"),
     }
 
-    const simplex = new SimplexNoise()
+    const noise2D = createNoise2D();
 
     for(let i = -16; i <= 16; i++) {
         for(let j = -16; j <= 16; j++) {
@@ -94,12 +101,13 @@ const dirt2_height = max_height * 0;
 
             if(position.length() > 16) continue 
 
-            let noise = (simplex.noise2D(i * 0.1, j * 0.1) + 1) * 0.5
+            let noise = (noise2D(i * 0.1, j * 0.1) + 1) * 0.5
             noise = Math.pow(noise, 1.5)
 
             makeHex(noise * max_height, position)
         }
     }
+    
 
     let stoneMesh = hexMesh(stoneGeo, textures.stone)
     let grassMesh = hexMesh(grassGeo, textures.grass)
@@ -157,12 +165,26 @@ const dirt2_height = max_height * 0;
 
     // clouds()
 
-
+    
     renderer.setAnimationLoop(()=> {
+        utime+= 0.001
         controls.update()
         renderer.render(scene, camera)
+        updateUniforms()
     })
+
+
 }())
+
+function updateUniforms() {
+    scene.traverse(function(child) {
+        if (child instanceof Mesh
+            && child.material.type === 'ShaderMaterial') {
+            child.material.uniforms.u_time.value = utime;
+            child.material.needsUpdate = true;
+        }
+    });
+}
 
 function tileToPosition(tileX, tileY) {
     return new Vector2((tileX + (tileY % 2) * 0.5) * 1.77, tileY * 1.535)
@@ -295,32 +317,47 @@ let modelTwo = ''
 let modelThree = ''
 let textureHead = new TextureLoader().load("mosaic.jpg")
 const gltfLoader = new GLTFLoader()
-gltfLoader.load('myhead4.gltf', (gltf)=> {
+gltfLoader.load('paper.gltf', (gltf)=> {
     
     modelOne = gltf.scene
-    modelOne.scale.set(2, 2, 2)
+    modelOne.scale.set(3, 3, 3)
     modelOne.position.y = 15
     modelOne.position.z = -10
     modelOne.rotation.x = .3
     modelOne.traverse(o=> {
         if(o.isMesh) {
             o.geometry.center()
-            o.material = new MeshStandardMaterial({
-                color: 0xffffff,
-                envMap: envmap, 
-                envMapIntensity: 0.75, 
-                flatShading: true,
-                map: textureHead,
+            o.material = new ShaderMaterial({
+                uniforms: {
+                    grad: {
+                        type: "t", 
+                        value: new TextureLoader().load(grad)
+                    }, 
+                    u_time: {
+                        type: "float",
+                        value: utime
+                    },
+                    u_resolutin: {
+                        type: "v4", 
+                        value: new Vector4()
+                    },
+                    uvRate1: {
+                        value: new Vector2(1, 1)
+                    }
+                },
+                vertexShader:   document.getElementById('vertex').textContent,
+                fragmentShader: document.getElementById('fragment').textContent,
+                side: DoubleSide
             });
         }
         
     })
     scene.add(modelOne)
 })
-gltfLoader.load('myhead4.gltf', (gltf)=> {
+gltfLoader.load('paper.gltf', (gltf)=> {
     
     modelTwo = gltf.scene
-    modelTwo.scale.set(2, 2, 2)
+    modelTwo.scale.set(5, 5, 5)
     modelTwo.position.y = 13
     modelTwo.position.x = -13
     modelTwo.rotation.y = 1.2
@@ -328,14 +365,27 @@ gltfLoader.load('myhead4.gltf', (gltf)=> {
     modelTwo.traverse(o=> {
         if(o.isMesh) {
             o.geometry.center()
-            o.material = new MeshStandardMaterial({
-                // color: 0xffffff,
-                envMap: envmap,
-                // roughness: 1,
-                // metalness: .5,
-                envMapIntensity: 0.75, 
-                flatShading: true,
-                map: textureHead,
+            o.material = new ShaderMaterial({
+                uniforms: {
+                    grad: {
+                        type: "t", 
+                        value: new TextureLoader().load(grad)
+                    }, 
+                    u_time: {
+                        type: "float",
+                        value: utime
+                    },
+                    u_resolutin: {
+                        type: "v4", 
+                        value: new Vector4()
+                    },
+                    uvRate1: {
+                        value: new Vector2(1, 1)
+                    }
+                },
+                vertexShader:   document.getElementById('vertex').textContent,
+                fragmentShader: document.getElementById('fragment').textContent,
+                side: DoubleSide
             });
         }
         
@@ -343,10 +393,10 @@ gltfLoader.load('myhead4.gltf', (gltf)=> {
     scene.add(modelTwo)
     
 })
-gltfLoader.load('myhead4.gltf', (gltf)=> {
+gltfLoader.load('paper.gltf', (gltf)=> {
     
     modelThree = gltf.scene
-    modelThree.scale.set(2, 2, 2)
+    modelThree.scale.set(5, 5, 5)
     modelThree.position.y = 10
     modelThree.position.x = 10
     modelThree.rotation.y = -1.2
@@ -354,12 +404,34 @@ gltfLoader.load('myhead4.gltf', (gltf)=> {
     modelThree.traverse(o=> {
         if(o.isMesh) {
             o.geometry.center()
-            o.material = new MeshStandardMaterial({
-                color: 0xffffff,
-                envMap: envmap, 
-                envMapIntensity: 0.75, 
-                flatShading: true,
-                map: textureHead,
+            // o.material = new MeshStandardMaterial({
+            //     color: 0xffffff,
+            //     envMap: envmap, 
+            //     envMapIntensity: 0.75, 
+            //     flatShading: true,
+            //     map: textureHead,
+            // });
+            o.material = new ShaderMaterial({
+                uniforms: {
+                    grad: {
+                        type: "t", 
+                        value: new TextureLoader().load(grad)
+                    }, 
+                    u_time: {
+                        type: "float",
+                        value: utime
+                    },
+                    u_resolutin: {
+                        type: "v4", 
+                        value: new Vector4()
+                    },
+                    uvRate1: {
+                        value: new Vector2(1, 1)
+                    }
+                },
+                vertexShader:   document.getElementById('vertex').textContent,
+                fragmentShader: document.getElementById('fragment').textContent,
+                side: DoubleSide
             });
         }
         
@@ -376,7 +448,7 @@ tl = gsap.timeline({
       // trigger: '#wrap',
       // trigger: '.container',
       // markers: true,
-      scrub: 0.5,
+      scrub: 1,
       start: 'top top',
       end: 'bottom bottom',
       snap: 1/(3-1),
@@ -393,8 +465,8 @@ tl = gsap.timeline({
       // trigger: 'wrap',
       // trigger: '#wrap',
       // trigger: '.container',
-      // markers: true,
-      scrub: 0.5,
+    //   markers: true,
+      scrub: 1,
       start: 'top top',
       end: 'bottom bottom',
       snap: 1/(4-1),
@@ -406,11 +478,41 @@ tl = gsap.timeline({
         camera.position.z = 35 + (-20* self.progress);
         camera.position.y = 37 + (-25* self.progress);
         camera.position.x = -5 + (-25* self.progress);
+        // camera.position.x = 35 + (-20* self.progress) * 2;
       }
     }
 });
 
+let sections = gsap.utils.toArray(".section");
 
+sections.forEach((section) => {
+  let text = section.querySelector(".my_text");
+  let p = section.querySelector("p");
+  gsap
+    .timeline({
+      scrollTrigger: {
+        trigger: section,
+        start: "top center",
+        end: "+=400",
+        scrub: 1,
+        // markers: true
+      }
+    })
+
+    .to(text, {
+      'clip-path': 'polygon(0% 100%, 100% 100%, 100% 0%, 0% 0%)',
+      opacity: 1,
+      y: 0,
+    })
+    .to(p, {
+      'clip-path': 'polygon(0% 100%, 100% 100%, 100% 0%, 0% 0%)',
+      opacity: 1,
+      y: 0,
+    })
+
+});
+
+  
 // ========= RESIZE ============
 const sizes = {
     width: window.innerWidth,
